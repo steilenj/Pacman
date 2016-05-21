@@ -8,6 +8,8 @@ function init()				// Funktion zum laden von z.B. Bildern
 	background_ctx = main_canvas.getContext('2d');								// initialisiert canvas
 	main_canvas = document.getElementById("main_canvas");
 	main_ctx = main_canvas.getContext('2d');
+	main_ctx.fillStyle = "red";
+	main_ctx.fillRect(10,10,50,50);
 }
 
 function mouse(e)
@@ -16,4 +18,9 @@ function mouse(e)
 	var y = e.pageY - document.getElementById("game_object").offsetTop;
 	document.getElementById("x").innerHTML = x;
 	document.getElementById("y").innerHTML = y;
+}
+
+function clear_main_canvas()
+{
+	main_ctx.clearRect(0,0,800,600);
 }

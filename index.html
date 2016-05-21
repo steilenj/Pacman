@@ -8,10 +8,11 @@
    </head>
 
    <body style="text-align: center;">
+   <button onclick="clear_main_canvas()">Spielfeld löschen</button>
 		<span id="x"></span> X <span id="y"></span> Y
 		<div id="game_object" style="position: relative">
-		<canvas id="background_canvas" style="background: gray; position: absolute; top: 0px; left: 0px; width: 800px; height: 600px;"></canvas>
-		<canvas id="main_canvas" style="background: gray; position: absolute; top: 0px; left: 0px; width: 800px; height: 600px;" onmousemove="mouse(event)">Leider unterstüzt Ihr Browser kein HTML5...</canvas>
+		<canvas id="background_canvas" width="800px" height="600px" style="background: gray; position: absolute; top: 0px; left: 0px;"></canvas>
+		<canvas id="main_canvas" width="800px" height="600px" style="background: gray; position: absolute; top: 0px; left: 0px;" onmousemove="mouse(event)">Leider unterstüzt Ihr Browser kein HTML5...</canvas>
 		<div>
 
 
