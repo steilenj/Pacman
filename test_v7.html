@@ -17,12 +17,7 @@
 		<canvas id="main_canvas" width="800px" height="600px" style="position: absolute; top: 0px; left: 0px;" onmousemove="mouse(event)">Leider unterstüzt Ihr Browser kein HTML5...</canvas>
 		<canvas id="hit_canvas" width="800px" height="600px" style="display:none"> </canvas>
 		<div>
-		<div id="sound">
-		<audio controls autoplay loop>
-		<source src="pacman_ringtone.mp3">
-		Dein Browser unterstützt kein HTML 5
-		</audio>
-		</div>
+
 		<script>
 			var main_canvas = document.getElementById("main_canvas");
 			var main_ctx = main_canvas.getContext("2d");
@@ -31,6 +26,7 @@
 			var hit_canvas = document.getElementById("hit_canvas");
 			var hit_ctx = hit_canvas.getContext("2d");
 
+			alert("Willkommen bei Pacman! \n Um die Spielfigur zu steuern benutze die Pfeiltasten \n Viel Spaß und den letzten beißen die Geister!");
 				
 			// Variabeln
 			var is_playing = false;
@@ -41,6 +37,11 @@
 			// Binde "Wacka"-Sound ein
 			var score_sound;
 			score_sound = new sound("pacman_eatfruit.wav");
+			
+			// Binde Hintergrundmusik ein
+			var background_sound;
+			background_sound = new sound("pacman_ringtone.mp3");
+			background_sound.play();
 			
 			var requestframe = (function() {									// Funktion welche Bowser erlaubt animationszeiten flüssig dazustellen / bringt Performance!
 									return window.requestAnimationFrame		||	// HTML5 Standard! Die folgenden Varianten sind für ältere Browser!
@@ -181,6 +182,7 @@
 					this.sound.pause();
 				}
 			}
+			
 			
 			function clear_main_ctx()
 			{
