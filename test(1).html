@@ -1,0 +1,293 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+
+
+        <button onclick="start_loop()">Starten</button>
+        <button onclick="stop_loop()">Pause</button>
+        <button onclick="restart_loop()">Neustart</button>
+        <span id="score">0</span> Punkte |                      <!-- Angabe eines Anfangswertes nötig --> 
+        <span id="life"></span> Leben |
+        <span id="TheTimer"></span> Sekunden                    
+        <div id="game_object" style="position: relative">
+            <canvas id="background_canvas" width="800px" height="600px" style="background: gray; position: absolute; top: 0px; left: 0px;"></canvas> 
+            <canvas id="main_canvas" width="800px" height="600px" style="position: absolute; top: 0px; left: 0px;" onmousemove="mouse(event)">Leider unterstüzt Ihr Browser kein HTML5...</canvas>
+            <canvas id="hit_canvas" width="800px" height="600px" style="display:none"> </canvas>
+            <script>
+                // Variablen
+				var GameTimer; 
+                var CurrentBackground = "level2.png";
+                var main_canvas = document.getElementById("main_canvas");
+                var main_ctx = main_canvas.getContext("2d");
+                var background_canvas = document.getElementById("background_canvas");
+                var background_ctx = background_canvas.getContext("2d");
+                var hit_canvas = document.getElementById("hit_canvas");
+                var hit_ctx = hit_canvas.getContext("2d");
+                alert("Willkommen bei Pacman! \n Um die Spielfigur zu steuern benutze die Pfeiltasten \n Viel Spaß und den letzten beißen die Geister!");
+                var is_playing = false;
+                var player = new Player;	//player werden die Werte der Klasse Player übergeben
+                           
+                var score_sound;
+                score_sound = new sound("pacman_eatfruit.wav"); // Binde "Wacka"-Sound ein
+
+                var background_sound;
+                background_sound = new sound("pacman_ringtone.mp3"); // Binde Hintergrundmusik ein
+                background_sound.play();
+
+                var requestframe = (function() {				// Funktion welche Bowser erlaubt animationszeiten flüssig dazustellen / bringt Performance!
+                    return window.requestAnimationFrame		||	// HTML5 Standard! Die folgenden Varianten sind für ältere Browser!
+                        window.webkitRequestAnimationFrame	||	// Googlecrome und Safari
+                        window.mozRequestAnimationFrame		||	// Firefox
+                        window.oRequestAnimationFrame		||	// Opera
+                        window.msRequestAnimationFrame		||	// Internetexplorer
+                        function (callback){					// Für sehr alte Browser!
+                        window.setTimeout(callback, 1000 / 60)
+                    };
+                })();
+                
+				// Klasse
+                function Player()						// Über Klasse werden mehrere Variablen deklariert
+                {
+                    this.drawX = 50;
+                    this.drawY = 275;					// 275 Damit der Startpunkt in der Vertikalenmitte ist
+                    this.speed = 2;
+                    this.is_downkey = false;
+                    this.is_upkey = false;
+                    this.is_leftkey = false;
+                    this.is_rightkey = false;
+                }
+
+                // Funktionen
+
+                Player.prototype.draw = function()		// Funktion von Funktion / Player soll bei aufruf gezeichnet werden
+                {
+                    this.check_keys();
+                    main_ctx.fillStyle = "yellow";
+                    main_ctx.fillRect(this.drawX, this.drawY, 50, 50);
+                    //console.log("rechteck malen");
+
+                };
+
+                player = new Player();					// Player wird gezeichnet
+
+
+                Player.prototype.check_keys = function()
+                {
+                    if (this.is_downkey == true)
+                    {
+                        if (canMove(this.drawX, this.drawY + this.speed))			// Damit wir nicht unten rausfallen. Funktion schreiben um ausnahmen aufrufen zu können
+                            this.drawY += this.speed;
+                    }
+
+                    if (this.is_upkey == true)
+                    {
+                        if (canMove(this.drawX, this.drawY - this.speed))
+                            this.drawY -= this.speed;
+                    }
+                    if (this.is_leftkey == true)
+                    {
+                        if (canMove(this.drawX - this.speed, this.drawY))
+                            this.drawX -= this.speed;
+                    }
+                    if (this.is_rightkey == true)
+                    {
+
+                        if (canMove(this.drawX + this.speed, this.drawY))
+                            this.drawX += this.speed;
+                    }
+                }			
+                function canMove(x,y){
+                    var CurPosition = hit_ctx.getImageData(x,y,50,50); // jeder Pixel innerhalb der Spielfigur
+                    for(var i = 0;i<(50*50)*4;i+=4){             // durchläuft jeden vierten Pixel in der Spielfigur      
+                        if(CurPosition.data[i] == 0 && CurPosition.data[i+1] == 153 && CurPosition.data[i+2] == 0){ // prüft alle drei Elemente (0, 153, 0) der Farbe
+                            return false
+                        } // erkennt die grünen Balken und lässt Spieler stoppen
+                        if(CurPosition.data[i] == 255 && CurPosition.data[i+1] == 0 && CurPosition.data[i+2] == 0){
+                            RedFound(x,y);
+                            CurPosition = hit_ctx.getImageData(x,y,50,50)
+                        }
+                    }
+                    return true; 
+                } // erkennt die roten Punkte und lässt Spieler weiterlaufen
+
+                function RedFound(x,y){
+
+                    x -= 30;
+                    y -= 30;
+                    var WW = 110;
+                    var HH = 110;                                               // Umgebung der Spielfigur
+                    var CurPosition = hit_ctx.getImageData(x,y,WW,HH);
+                    var CurX = x;
+                    var CurY = y; // alle Farben in einem Array
+                    for(var i = 0;i<(WW*HH)*4;i+=4){                                     // liest die Farben aus,jedes Item steht für ein Pixel
+                        if (CurPosition.data[i] == 255 && CurPosition.data[i+1] == 0 && CurPosition.data[i+2] == 0){
+                            background_ctx.fillStyle = hit_ctx.fillStyle = "#000";       // Farbe wird auf schwarz gesetzt
+                            background_ctx.fillRect(CurX,CurY, 1, 1);
+                            hit_ctx.fillRect(CurX,CurY, 1, 1);                           // in beiden Canvas wurde der rote Punkt mit einem schwarzen Rechteckt übermalt
+                            score_sound.play(); 
+                        }
+                        CurX++;
+                        if(CurX >= WW+x){
+                            CurX=x;
+                            CurY++;
+                        }
+                    }
+                    var Score = document.getElementById("score");
+                    if((Score.innerHTML = parseFloat(Score.innerHTML) + 1) >= 19)
+					{
+						CurrentBackground = "Level3.png"; // zählt die eingesammelten Punkte, bis 19 - dann nächstes Level
+                        Score.innerHTML = "0";
+                        load_media();
+                        player = new Player();
+                        alert("Gut gemacht! Auf geht's ins nächste Level.")
+                    }
+                }
+
+
+                function load_media()					// Funktion zum laden von medien
+                {
+                    var hitbox_sprite = new Image();
+                    hitbox_sprite.src = CurrentBackground;
+                    hitbox_sprite.onload = function(){								// Ladeereignis abwarten
+                        hit_ctx.drawImage(hitbox_sprite, 0, 0);					// drawImage malt bild. erst in spielfeld funktion malen
+                        background_ctx.drawImage(hitbox_sprite, 0, 0);
+                        console.log("Medien geladen");
+                    }		
+                }
+
+
+                load_media();							// funktion zum medien laden aufrufen!
+
+                // Die Funktion sound stammt von Sarah Ernst und Elena Mahal
+                function sound(src) {
+                    this.sound = document.createElement("audio");
+                    this.sound.src = src;
+                    this.sound.setAttribute("preload", "auto");
+                    this.sound.setAttribute("controls", "none");
+                    this.sound.style.display = "none";
+                    document.body.appendChild(this.sound);
+                    this.play = function(){
+                        this.sound.play();
+                    }
+                    this.stop = function(){
+                        this.sound.pause();
+                    }
+                }
+
+                function lifecount()
+                {
+                    var life = 3;
+                    document.getElementById("life").innerHTML = life;
+                }
+
+
+                function loop()
+                {
+                    main_ctx.clearRect(0,0,800,600);
+                    //console.log("spielfeld wird zurückgesetzt");
+                    player.draw();
+                    lifecount();
+                    if (is_playing)
+                        requestframe(loop);    // alternativ window.setTimeout(loop, 10); schleife welche alle 10 milisec. sich selbst aufruft / nicht gut weil wenn rechner ausgelastet, werden die Millisek. nicht mehr eingehalten!
+
+                }
+                // startet Spiel
+                function start_loop()
+                {
+                    StartTimer() // TimerFunction
+                    is_playing = true;
+                    loop();
+                }
+                // pausiert Spiel
+                function stop_loop()
+                {
+                    StopTimer() // TimerFunction
+                    is_playing = false;
+                    console.log("stoppe spiel");
+                }
+                // startet Spiel neu
+                function restart_loop()
+                {
+                    location.reload(true);
+                }
+
+                // Funktion zum Steuern!
+
+                document.addEventListener("keydown", key_down, false);   // ähnlich wie "on" zum ausführen von irgendwas. liest hier keyboard aus ob Taste gedrückt ist
+                document.addEventListener("keyup", key_up, false);
+
+                function key_down(e) 			// e für event!
+                {
+                    var key_id = e.keyCode || e.which;    // keyCode und which sagt an welche Taste gedrückt wurde! Beides wird genötigt da ein Browser nur ein von beiden hat!
+                    if (key_id == 40)   //down key!  40 ist die key id für die down taste
+                    {
+                        player.is_downkey = true;	// wenn Taste "40" gedrückt ist wird der Wert True gesetzt		
+                        e.preventDefault();	// wichtig damit der Browser nicht die seite scrollt! 
+                    }
+                    if (key_id == 38)   //up key! 
+                    {
+                        player.is_upkey = true;
+                        e.preventDefault();	// wichtig damit der Browser nicht die seite scrollt! 
+                    }
+                    if (key_id == 37)   //left key! 
+                    {
+                        player.is_leftkey = true;
+                        e.preventDefault();	// wichtig damit der Browser nicht die seite scrollt! 
+                    }
+                    if (key_id == 39)   //right key! 
+                    {
+                        player.is_rightkey = true;
+                        e.preventDefault();	// wichtig damit der Browser nicht die seite scrollt! 
+                    }
+                }
+
+                function key_up(e) 	// sorgt dafür das wenn Taste nicht mehr gedrückt wird sich nicht mehr bewegt wird		
+                {
+                    var key_id = e.keyCode || e.which;    
+                    if (key_id == 40)   
+                    {
+                        player.is_downkey = false;			
+                        e.preventDefault();	
+                    }
+                    if (key_id == 38)    
+                    {
+                        player.is_upkey = false;
+                        e.preventDefault();	
+                    }
+                    if (key_id == 37)  
+                    {
+                        player.is_leftkey = false;
+                        e.preventDefault();	 
+                    }
+                    if (key_id == 39)   
+                    {
+                        player.is_rightkey = false;
+                        e.preventDefault();	
+                    }
+                }
+                
+                // Timer Funktion
+                function StartTimer(){
+                    StopTimer();
+                    var TheTimerSpan = document.getElementById("TheTimer");
+                    TheTimerSpan.innerHTML = 35
+                    GameTimer = setInterval(function(){
+                        var prevVal = parseFloat(TheTimerSpan.innerHTML) || 0;
+                        if(prevVal <= 0){
+                            stop_loop()
+                            alert("Game Over! Du warst zu langsam. Versuche es noch einmal.");
+                            return;
+                        }
+                        TheTimerSpan.innerHTML = prevVal - 1;
+                    },1000)
+                }
+                function StopTimer(){
+                    clearInterval(GameTimer);
+                }
+                
+            </script>
+
+            </body>
+        </html>
